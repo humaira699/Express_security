@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 const bodyParser = require('body-parser');
 var User = require('../models/userPassport');
+var authenticate = require('../authenticate');
 router.use(bodyParser.json());
 var passport = require('passport');
 
@@ -34,17 +35,5 @@ router.post('/signup', (req, res, next) => {
     res.json({success: true, status: 'You are successfully logged in!'});
   });
 
-router.get('/logout', (req, res) => {
-  if (req.session) {
-    req.session.destroy();
-    res.clearCookie('session-id');
-    res.redirect('/');
-  }
-  else {
-    var err = new Error('You are not logged in!');
-    err.status = 403;
-    next(err);
-  }
-});
 
 module.exports = router;

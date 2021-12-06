@@ -5,15 +5,17 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var mongoose = require('mongoose');
 var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/usersPass');
+var usersRouter = require('./routes/users');
+var userpRouter = require('./routes/usersPass');
 var adminRouter = require('./routes/admin');
 var studentRouter = require('./routes/student');
 var teacherRouter = require('./routes/teacher');
 var headRouter = require('./routes/head');
 var session = require('express-session');
 var FileStore = require('session-file-store')(session);
-var passport = require('passport');
+var passport = require("passport");
 var authenticate = require('./authenticate');
+
 // Session file store is a provision for storing session data in the session file
 
 const connection = mongoose.connect('mongodb://localhost:27017/lms', { useNewUrlParser: true, useUnifiedTopology: true });
@@ -29,8 +31,7 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-
-//signing up and logging in 
+//Authentication using passport and passport-local-mongoose
 app.use(session({
     name: 'session-id',
     secret: '12345-67890-09876-54321',
@@ -38,25 +39,23 @@ app.use(session({
     resave: false,
     store: new FileStore()
   }));
-
-app.use('/', indexRouter);
-app.use('/user', usersRouter);  
 app.use(passport.initialize());
 app.use(passport.session());
-
+app.use('/', indexRouter);
+app.use('/user', usersRouter);
 function authorize (req, res, next) {
     console.log(req.user);
-    if (!req.user) {
-      var err = new Error('You are not authenticated!');
-      err.status = 403;
-      next(err);
+    if (!req.user) {        
+        var err = new Error('You are not authenticated!');
+        err.status = 403;
+        return next(err);    
     }
     else {
-          next();
-    }
+        next();
+  }
 }
 
-//using sessions
+//Authentication using passport and passport-local with username & pwd stored in mongodb
 // app.use(session({
 //     name: 'session-id',
 //     secret: '12345-67890-09876-54321',
@@ -64,9 +63,64 @@ function authorize (req, res, next) {
 //     resave: false,
 //     store: new FileStore()
 //   }));
+// app.use(passport.initialize());
+// app.use(passport.session());
+// app.use('/', indexRouter);
+// app.use('/user', usersRouter);
+
+// function authorize (req, res, next) {
+//     console.log(req.user);
+//     if (!req.user) {        
+//         var err = new Error('You are not authenticated!');
+//         err.status = 403;
+//         return next(err);    
+//     }
+//     else {
+//         next();
+//   }
+// }
+
+//signing up and logging in where the username is stored in db
+// app.use(session({
+//     name: 'session-id',
+//     secret: '12345-67890-09876-54321',
+//     saveUninitialized: false,
+//     resave: false,
+//     store: new FileStore()
+//   }));
+// app.use('/', indexRouter);
+// app.use('/user', usersRouter);
+// function authorize (req, res, next) {
+//     console.log(req.session);  
+//     if (!req.session.user) {        
+//         var err = new Error('You are not authenticated!');
+//         err.status = 401;
+//         return next(err);    
+//     }        
+//     else {
+//         if (req.session.user === 'authenticated') {
+//             next();
+//         }
+//         else {
+//             var err = new Error('You are not authenticated!');
+//             err.status = 401;
+//             return next(err);
+//         }
+//     }
+// }
+// ============
+//using sessions
+// app.use(session({
+//     name: 'ref',
+//     secret: '12345-67890-09876-54321',
+//     saveUninitialized: false,
+//     resave: false,
+//     store: new FileStore()
+//   }));
   
 //   function authorize (req, res, next) {
-//       console.log(req.session);  
+//       console.log(req.session.id);
+//       console.log(req.session.cookie); 
 //       if (!req.session.user) {
 //           var authHeader = req.headers.authorization;
 //           if (!authHeader) {
@@ -79,8 +133,9 @@ function authorize (req, res, next) {
 //           var auth = new Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
 //           var user = auth[0];
 //           var pass = auth[1];
-//           if (user == 'admin' && pass == 'password') {
+//           if (user == 'admin' && pass == 'cs7') {
 //               req.session.user = 'admin';
+//               console.log(req.session);              
 //               next(); // authorized
 //           } else {
 //               var err = new Error('You are not authenticated!');
@@ -92,6 +147,8 @@ function authorize (req, res, next) {
 //       else {
 //           if (req.session.user === 'admin') {
 //               console.log('req.session: ',req.session);
+//               console.log(req.session.id);
+//               console.log(req.session.cookie);
 //               next();
 //           }
 //           else {
@@ -162,12 +219,12 @@ function authorize (req, res, next) {
 //         next(err);
 //     }
 // }
+
 app.use(authorize);
 
-
-
 app.use(express.static(path.join(__dirname, 'public')));
-
+// app.use('/', indexRouter);
+// app.use('/user', usersRouter);  
 app.use('/head', headRouter);
 app.use('/teacher', teacherRouter);
 app.use('/admin', adminRouter);
